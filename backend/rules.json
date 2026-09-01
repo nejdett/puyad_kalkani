@@ -1,0 +1,467 @@
+[
+  {
+    "id": "ssh_root_login",
+    "name": "SSH Root Login Kapalı Olmalı",
+    "category": "SSH",
+    "severity": "high",
+    "check_command": "grep -qE '^PermitRootLogin\\s+no' /etc/ssh/sshd_config && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^PermitRootLogin' /etc/ssh/sshd_config && sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config || echo 'PermitRootLogin no' >> /etc/ssh/sshd_config; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "Root login kapatılmalı, aksi halde brute-force ile direkt sistem ele geçirilebilir."
+  },
+  {
+    "id": "ssh_password_auth",
+    "name": "SSH Şifre Girişi Kapalı Olmalı",
+    "category": "SSH",
+    "severity": "high",
+    "check_command": "grep -qE '^PasswordAuthentication\\s+no' /etc/ssh/sshd_config && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^PasswordAuthentication' /etc/ssh/sshd_config && sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config || echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "Şifre girişi kapalı olmalı, SSH key ile bağlanılmalı."
+  },
+  {
+    "id": "ssh_empty_passwords",
+    "name": "SSH Boş Parola Girişi Kapalı Olmalı",
+    "category": "SSH",
+    "severity": "high",
+    "check_command": "grep -qE '^PermitEmptyPasswords\\s+no' /etc/ssh/sshd_config && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^PermitEmptyPasswords' /etc/ssh/sshd_config && sed -i 's/^PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config || echo 'PermitEmptyPasswords no' >> /etc/ssh/sshd_config; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "Boş parolayla girişe izin veren bir sistem zaten güvensizdir."
+  },
+  {
+    "id": "firewall_active",
+    "name": "Güvenlik Duvarı (UFW) Aktif Olmalı",
+    "category": "Ağ",
+    "severity": "high",
+    "check_command": "ufw status 2>/dev/null | grep -q 'Status: active' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "ufw --force enable && echo 'OK'",
+    "description": "Firewall kapalıysa tüm portlar açık demektir, hemen aktif edilmeli."
+  },
+  {
+    "id": "iptables_default_deny",
+    "name": "iptables Varsayılan Politikası DROP Olmalı",
+    "category": "Ağ",
+    "severity": "high",
+    "check_command": "iptables -S INPUT 2>/dev/null | grep -q '^-P INPUT DROP' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "iptables -P INPUT DROP; iptables -P FORWARD DROP; iptables -C INPUT -i lo -j ACCEPT 2>/dev/null || iptables -A INPUT -i lo -j ACCEPT; iptables -C INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT; iptables -C INPUT -p tcp --dport 22 -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport 22 -j ACCEPT; iptables -C INPUT -p tcp --dport 80 -j ACCEPT 2>/dev/null || iptables -A INPUT -p tcp --dport 80 -j ACCEPT; echo 'OK'",
+    "description": "INPUT politikası DROP olmalı, sadece gerekli portlar açık bırakılmalı."
+  },
+  {
+    "id": "password_max_days",
+    "name": "Şifre Maksimum Geçerlilik Süresi 90 Gün Olmalı",
+    "category": "Şifre Politikası",
+    "severity": "medium",
+    "check_command": "VAL=$(grep -E '^PASS_MAX_DAYS' /etc/login.defs | awk '{print $2}'); [ -n \"$VAL\" ] && [ \"$VAL\" -le 90 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^PASS_MAX_DAYS' /etc/login.defs && sed -i 's/^PASS_MAX_DAYS.*/PASS_MAX_DAYS   90/' /etc/login.defs || echo 'PASS_MAX_DAYS   90' >> /etc/login.defs; echo 'OK'",
+    "description": "90 günü aşan şifreler artık güvenli kabul edilmiyor."
+  },
+  {
+    "id": "password_min_length",
+    "name": "Minimum Şifre Uzunluğu 12 Karakter Olmalı",
+    "category": "Şifre Politikası",
+    "severity": "medium",
+    "check_command": "VAL=$(grep -E '^minlen' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{gsub(/ /,\"\",$2); print $2}'); [ -n \"$VAL\" ] && [ \"$VAL\" -ge 12 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^minlen' /etc/security/pwquality.conf 2>/dev/null && sed -i 's/^minlen.*/minlen = 12/' /etc/security/pwquality.conf || sed -i 's/^# minlen.*/minlen = 12/' /etc/security/pwquality.conf; grep -qE '^minlen' /etc/security/pwquality.conf 2>/dev/null || echo 'minlen = 12' >> /etc/security/pwquality.conf; echo 'OK'",
+    "description": "Kısa şifreler kırılması kolaydır, 12 karakter minimum olmalı."
+  },
+  {
+    "id": "empty_password_users",
+    "name": "Boş Parolalı Kullanıcı Olmamalı",
+    "category": "Kullanıcı Güvenliği",
+    "severity": "high",
+    "check_command": "awk -F: '$2 == \"\" {print $1}' /etc/shadow 2>/dev/null | grep -q . && echo 'FAIL' || echo 'OK'",
+    "fix_command": "awk -F: '$2 == \"\" {print $1}' /etc/shadow 2>/dev/null | xargs -r -I{} passwd -l {}; echo 'OK'",
+    "description": "Parolası boş hesap = açık kapı. Hemen kilitlenmeli."
+  },
+  {
+    "id": "uid_zero_users",
+    "name": "Root Dışında UID 0 Kullanıcı Olmamalı",
+    "category": "Kullanıcı Güvenliği",
+    "severity": "high",
+    "check_command": "EXTRA=$(awk -F: '($3 == 0 && $1 != \"root\") {print $1}' /etc/passwd); [ -z \"$EXTRA\" ] && echo 'OK' || echo \"FAIL: $EXTRA\"",
+    "fix_command": "awk -F: '($3 == 0 && $1 != \"root\") {print $1}' /etc/passwd | while read USER; do NEW_UID=$(awk -F: '{if($3>max)max=$3} END{print max+1}' /etc/passwd); usermod -u \"$NEW_UID\" \"$USER\" 2>/dev/null && echo \"$USER kullanicisinin UID degeri $NEW_UID olarak degistirildi\" || userdel -f \"$USER\" 2>/dev/null && echo \"$USER kullanicisi silindi\"; done; echo 'OK'",
+    "description": "Root gibi davranan sahte kullanıcı olabilir, UID 0 sadece root'a ait olmalı."
+  },
+  {
+    "id": "root_password_age",
+    "name": "Root Parolası Son 180 Günde Değiştirilmiş Olmalı",
+    "category": "Kullanıcı Güvenliği",
+    "severity": "medium",
+    "check_command": "SHADOW_DAYS=$(awk -F: '$1==\"root\" {print $3}' /etc/shadow 2>/dev/null); [ -z \"$SHADOW_DAYS\" ] || [ \"$SHADOW_DAYS\" = '0' ] && echo 'FAIL' && exit; TODAY=$(( $(date +%s) / 86400 )); AGE=$(( TODAY - SHADOW_DAYS )); [ \"$AGE\" -le 180 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "echo 'Bu kural otomatik düzeltilemez. Root parolasını güncellemek için terminalde: passwd root'",
+    "description": "Root parolası 180 günden eskiyse değiştirilmeli."
+  },
+  {
+    "id": "world_writable_files",
+    "name": "Herkese Yazılabilir Dosya Olmamalı",
+    "category": "Dosya Sistemi",
+    "severity": "medium",
+    "check_command": "find /home /root /etc /opt /srv /usr/local -xdev -type f -perm -0002 2>/dev/null | grep -q . && echo 'FAIL' || echo 'OK'",
+    "fix_command": "find /home /root /etc /opt /srv /usr/local -xdev -type f -perm -0002 2>/dev/null | xargs -r chmod o-w; echo 'OK'",
+    "description": "Herkesin yazabildiği dosya herkes tarafından değiştirilebilir, tehlikeli."
+  },
+  {
+    "id": "world_writable_dirs",
+    "name": "Herkese Yazılabilir Dizin Olmamalı",
+    "category": "Dosya Sistemi",
+    "severity": "medium",
+    "check_command": "find /home /root /etc /opt /srv /usr/local -xdev -type d -perm -0002 2>/dev/null | grep -q . && echo 'FAIL' || echo 'OK'",
+    "fix_command": "find /home /root /etc /opt /srv /usr/local -xdev -type d -perm -0002 2>/dev/null | xargs -r chmod 755; echo 'OK'",
+    "description": "Kritik dizinlerde world-writable klasör olmamalı."
+  },
+  {
+    "id": "orphan_files",
+    "name": "Sahipsiz (Orphan) Dosya Olmamalı",
+    "category": "Dosya Sistemi",
+    "severity": "low",
+    "check_command": "python3 -c \"import subprocess; r1=subprocess.run(['find','/home','/root','/opt','/srv','/usr/local','-xdev','-nouser'],capture_output=True,text=True); r2=subprocess.run(['find','/home','/root','/opt','/srv','/usr/local','-xdev','-nogroup'],capture_output=True,text=True); total=len([l for l in r1.stdout.splitlines()+r2.stdout.splitlines() if l]); print('OK') if total==0 else print('FAIL: '+str(total)+' sahipsiz dosya')\"",
+    "fix_command": "python3 -c \"import subprocess; r1=subprocess.run(['find','/home','/root','/opt','/srv','/usr/local','-xdev','-nouser'],capture_output=True,text=True); r2=subprocess.run(['find','/home','/root','/opt','/srv','/usr/local','-xdev','-nogroup'],capture_output=True,text=True); files=list(set([l for l in r1.stdout.splitlines()+r2.stdout.splitlines() if l])); [subprocess.run(['chown','root:root',f],capture_output=True) for f in files]; print('OK')\"",
+    "description": "Sahipsiz dosyalar garip kalır, root'a devretmek en mantıklısı."
+  },
+  {
+    "id": "shadow_permissions",
+    "name": "/etc/shadow Dosyası İzinleri 640 Olmalı",
+    "category": "Dosya Sistemi",
+    "severity": "high",
+    "check_command": "PERM=$(stat -c '%a' /etc/shadow 2>/dev/null); [ \"$PERM\" = '640' ] || [ \"$PERM\" = '000' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "chown root:shadow /etc/shadow && chmod 640 /etc/shadow && echo 'OK'",
+    "description": "Shadow 640 olmalı, parola hash'leri herkesin erişimine açık olamaz."
+  },
+  {
+    "id": "passwd_permissions",
+    "name": "/etc/passwd Dosyası İzinleri 644 Olmalı",
+    "category": "Dosya Sistemi",
+    "severity": "medium",
+    "check_command": "[ \"$(stat -c '%a' /etc/passwd 2>/dev/null)\" = '644' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "chown root:root /etc/passwd && chmod 644 /etc/passwd && echo 'OK'",
+    "description": "passwd 644 ve root:root olmalı."
+  },
+  {
+    "id": "group_permissions",
+    "name": "/etc/group Dosyası İzinleri 644 Olmalı",
+    "category": "Dosya Sistemi",
+    "severity": "medium",
+    "check_command": "[ \"$(stat -c '%a' /etc/group 2>/dev/null)\" = '644' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "chown root:root /etc/group && chmod 644 /etc/group && echo 'OK'",
+    "description": "group dosyası da passwd ile aynı izinlerde olmalı."
+  },
+  {
+    "id": "suid_files",
+    "name": "Gereksiz SUID Dosyaları Olmamalı",
+    "category": "Dosya Sistemi",
+    "severity": "low",
+    "check_command": "WHITELIST='/usr/bin/passwd /usr/bin/sudo /usr/bin/su /usr/bin/mount /usr/bin/umount /usr/bin/newgrp /usr/bin/chsh /usr/bin/chfn /usr/bin/gpasswd /usr/bin/pkexec /usr/bin/fusermount3 /usr/bin/fusermount /usr/lib/openssh/ssh-keysign /usr/lib/dbus-1.0/dbus-daemon-launch-helper /usr/sbin/pppd /usr/sbin/mount.nfs /usr/sbin/mount.cifs /usr/lib/xorg/Xorg.wrap'; UNKNOWN=$(find /usr /bin /sbin -xdev -type f -perm -4000 2>/dev/null | while read F; do echo \"$WHITELIST\" | tr ' ' '\\n' | grep -qxF \"$F\" || echo \"$F\"; done); [ -z \"$UNKNOWN\" ] && echo OK || echo FAIL",
+    "fix_command": "WHITELIST='/usr/bin/passwd /usr/bin/sudo /usr/bin/su /usr/bin/mount /usr/bin/umount /usr/bin/newgrp /usr/bin/chsh /usr/bin/chfn /usr/bin/gpasswd /usr/bin/pkexec /usr/bin/fusermount3 /usr/bin/fusermount /usr/lib/openssh/ssh-keysign /usr/lib/dbus-1.0/dbus-daemon-launch-helper /usr/sbin/pppd /usr/sbin/mount.nfs /usr/sbin/mount.cifs /usr/lib/xorg/Xorg.wrap'; find /usr /bin /sbin -xdev -type f -perm -4000 2>/dev/null | while read F; do echo \"$WHITELIST\" | tr ' ' '\\n' | grep -qxF \"$F\" || { chmod u-s \"$F\" && echo \"SUID kaldirildi: $F\"; }; done; echo OK",
+    "description": "Bilinen SUID'lar dışında kalan dosyalardaki SUID biti kaldırılmalı,=root yetkisi verir."
+  },
+  {
+    "id": "crontab_permissions",
+    "name": "/etc/crontab İzinleri 600 Olmalı",
+    "category": "Zamanlanmış Görevler",
+    "severity": "medium",
+    "check_command": "[ \"$(stat -c '%a' /etc/crontab 2>/dev/null)\" = '600' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "chown root:root /etc/crontab && chmod 600 /etc/crontab && echo 'OK'",
+    "description": "Crontab herkesin görmesi gereken bir dosya değil, 600 olmalı."
+  },
+  {
+    "id": "cron_dirs_permissions",
+    "name": "Cron Dizinleri Yalnızca Root Tarafından Erişilebilir Olmalı",
+    "category": "Zamanlanmış Görevler",
+    "severity": "medium",
+    "check_command": "python3 -c \"import os,stat; dirs=[d for d in ['/etc/cron.daily','/etc/cron.weekly','/etc/cron.monthly','/etc/cron.hourly'] if os.path.isdir(d)]; bad=[d for d in dirs if oct(stat.S_IMODE(os.stat(d).st_mode))!='0o700']; print('FAIL') if bad else print('OK')\"",
+    "fix_command": "for d in /etc/cron.daily /etc/cron.weekly /etc/cron.monthly /etc/cron.hourly; do [ -d \"$d\" ] && chown root:root \"$d\" && chmod 700 \"$d\"; done; echo 'OK'",
+    "description": "Cron dizinleri herkese açık olmamalı, sadece root erişebilmeli."
+  },
+  {
+    "id": "insecure_services",
+    "name": "Güvensiz Servisler (telnet, rsh) Kaldırılmış Olmalı",
+    "category": "Servis Güvenliği",
+    "severity": "high",
+    "check_command": "FOUND=$(dpkg -l 2>/dev/null | awk '$1==\"ii\" && ($2~/^telnet/ || $2~/^rsh/ || $2==\"xinetd\" || $2==\"inetutils-telnetd\") {print $2}'); [ -z \"$FOUND\" ] && echo 'OK' || echo \"FAIL: $FOUND kurulu\"",
+    "fix_command": "PKGS=$(dpkg -l 2>/dev/null | awk '$1==\"ii\" && ($2~/^telnet/ || $2~/^rsh/ || $2==\"xinetd\" || $2==\"inetutils-telnetd\") {print $2}'); if [ -z \"$PKGS\" ]; then echo 'OK - Zaten kurulu değil'; else apt-get purge -y $PKGS 2>/dev/null && echo 'OK' || echo 'FAIL'; fi",
+    "description": "Telnet, rsh gibi servisler şifresiz çalışır, kurulmamış olmalı."
+  },
+  {
+    "id": "mysql_localhost_only",
+    "name": "MySQL Yalnızca Localhost'ta Dinlemeli",
+    "category": "Servis Güvenliği",
+    "severity": "medium",
+    "check_command": "systemctl is-active mysql mariadb 2>/dev/null | grep -q '^active$' || echo 'OK' && exit 0; ss -tlnp 2>/dev/null | grep ':3306' | grep -qv '127.0.0.1\\|::1' && echo 'FAIL' || echo 'OK'",
+    "fix_command": "CONF=$(find /etc/mysql -name 'mysqld.cnf' -o -name 'my.cnf' 2>/dev/null | head -1); [ -n \"$CONF\" ] && (grep -q 'bind-address' \"$CONF\" && sed -i 's/^bind-address.*/bind-address = 127.0.0.1/' \"$CONF\" || echo 'bind-address = 127.0.0.1' >> \"$CONF\"); systemctl restart mysql 2>/dev/null || systemctl restart mariadb 2>/dev/null; echo 'OK'",
+    "description": "MySQL dışarıdan erişime açık olmamalı, localhost'a bağlı kalmalı."
+  },
+  {
+    "id": "postgresql_localhost_only",
+    "name": "PostgreSQL Yalnızca Localhost'ta Dinlemeli",
+    "category": "Servis Güvenliği",
+    "severity": "medium",
+    "check_command": "systemctl is-active postgresql 2>/dev/null | grep -q '^active$' || echo 'OK' && exit 0; ss -tlnp 2>/dev/null | grep ':5432' | grep -qv '127.0.0.1\\|::1' && echo 'FAIL' || echo 'OK'",
+    "fix_command": "PG_CONF=$(find /etc/postgresql -name 'postgresql.conf' 2>/dev/null | head -1); [ -n \"$PG_CONF\" ] && sed -i \"s/^listen_addresses.*/listen_addresses = 'localhost'/\" \"$PG_CONF\" && systemctl restart postgresql 2>/dev/null; echo 'OK'",
+    "description": "PostgreSQL de MySQL gibi sadece localhost'ta dinlemeli."
+  },
+  {
+    "id": "tmp_noexec",
+    "name": "/tmp Dizini noexec ile Bağlanmış Olmalı",
+    "category": "Bellek ve Bölümleme",
+    "severity": "medium",
+    "check_command": "mount 2>/dev/null | grep -E '\\s/tmp\\s' | grep -q 'noexec' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "mount -o remount,noexec,nosuid,nodev /tmp 2>/dev/null; grep -qE '\\s/tmp\\s' /etc/fstab && sed -i '/[[:space:]]\\+\\/tmp[[:space:]]/s/defaults/defaults,noexec,nosuid,nodev/' /etc/fstab || echo 'tmpfs /tmp tmpfs defaults,noexec,nosuid,nodev 0 0' >> /etc/fstab; echo 'OK'",
+    "description": "/tmp execute izniyle bağlanmamalı, oraya atılan script çalıştırılamamalı."
+  },
+  {
+    "id": "shm_noexec",
+    "name": "/dev/shm Dizini noexec ile Bağlanmış Olmalı",
+    "category": "Bellek ve Bölümleme",
+    "severity": "medium",
+    "check_command": "mount 2>/dev/null | grep '/dev/shm' | grep -q 'noexec' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "mount -o remount,noexec,nosuid,nodev /dev/shm 2>/dev/null; grep -q '/dev/shm' /etc/fstab && sed -i '/\\/dev\\/shm/s/defaults/defaults,noexec,nosuid,nodev/' /etc/fstab || echo 'tmpfs /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0' >> /etc/fstab; echo 'OK'",
+    "description": "/dev/shm de /tmp gibi noexec olmalı."
+  },
+  {
+    "id": "automatic_updates",
+    "name": "Otomatik Güvenlik Güncellemeleri Aktif Olmalı",
+    "category": "Sistem",
+    "severity": "medium",
+    "check_command": "dpkg -l 2>/dev/null | awk '$1==\"ii\" && $2==\"unattended-upgrades\" {found=1} END {print (found ? \"OK\" : \"FAIL\")}'",
+    "fix_command": "apt-get install -y unattended-upgrades && dpkg-reconfigure -plow unattended-upgrades; echo 'OK'",
+    "description": "Otomatik güncelleme aktif olmalı, yamalar elle beklenmemeli."
+  },
+  {
+    "id": "core_dumps_disabled",
+    "name": "Core Dump Devre Dışı Olmalı",
+    "category": "Sistem",
+    "severity": "low",
+    "check_command": "grep -qE '^\\*\\s+(hard|soft)\\s+core\\s+0' /etc/security/limits.conf && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^\\* hard core 0' /etc/security/limits.conf || echo '* hard core 0' >> /etc/security/limits.conf; grep -qE '^\\* soft core 0' /etc/security/limits.conf || echo '* soft core 0' >> /etc/security/limits.conf; echo 'OK'",
+    "description": "Core dump memory döker, hassas veri sızabilir."
+  },
+  {
+    "id": "ipv6_disabled",
+    "name": "IPv6 Kullanılmıyorsa Devre Dışı Olmalı",
+    "category": "Ağ",
+    "severity": "low",
+    "check_command": "[ \"$(sysctl -n net.ipv6.conf.all.disable_ipv6 2>/dev/null)\" = '1' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -q 'net.ipv6.conf.all.disable_ipv6' /etc/sysctl.conf && sed -i 's/.*net.ipv6.conf.all.disable_ipv6.*/net.ipv6.conf.all.disable_ipv6 = 1/' /etc/sysctl.conf || echo 'net.ipv6.conf.all.disable_ipv6 = 1' >> /etc/sysctl.conf; sysctl -p; echo 'OK'",
+    "description": "Kullanılmayan IPv6 açık kalmamalı, gereksiz attack surface."
+  },
+
+  {
+    "id": "avahi_disabled",
+    "name": "Avahi Daemon Devre Dışı Olmalı (CIS 2.2.3)",
+    "category": "Gereksiz Servisler",
+    "severity": "medium",
+    "check_command": "systemctl is-active avahi-daemon 2>/dev/null | grep -q '^active$' && echo 'FAIL' || echo 'OK'",
+    "fix_command": "systemctl stop avahi-daemon 2>/dev/null; systemctl disable avahi-daemon 2>/dev/null; systemctl mask avahi-daemon 2>/dev/null; echo 'OK'",
+    "description": "Avahi ağ keşfi yapıyor, sunucuda ne işi var kapat gitsin."
+  },
+  {
+    "id": "cups_disabled",
+    "name": "CUPS (Yazıcı Servisi) Devre Dışı Olmalı (CIS 2.2.4)",
+    "category": "Gereksiz Servisler",
+    "severity": "medium",
+    "check_command": "systemctl is-active cups 2>/dev/null | grep -q '^active$' && echo 'FAIL' || echo 'OK'",
+    "fix_command": "systemctl stop cups 2>/dev/null; systemctl disable cups 2>/dev/null; systemctl mask cups 2>/dev/null; echo 'OK'",
+    "description": "Sunucuda yazıcı servisi çalıştırmaya gerek yok."
+  },
+  {
+    "id": "rpcbind_disabled",
+    "name": "rpcbind Servisi Devre Dışı Olmalı (CIS 2.2.7)",
+    "category": "Gereksiz Servisler",
+    "severity": "high",
+    "check_command": "systemctl is-active rpcbind 2>/dev/null | grep -q '^active$' && echo 'FAIL' || echo 'OK'",
+    "fix_command": "systemctl stop rpcbind 2>/dev/null; systemctl disable rpcbind 2>/dev/null; systemctl mask rpcbind 2>/dev/null; echo 'OK'",
+    "description": "RPC kullanmıyorsan rpcbind de kapalı olmalı."
+  },
+  {
+    "id": "nfs_disabled",
+    "name": "NFS Servisi Devre Dışı Olmalı (CIS 2.2.7)",
+    "category": "Gereksiz Servisler",
+    "severity": "high",
+    "check_command": "systemctl is-active nfs-server 2>/dev/null | grep -q '^active$' && echo 'FAIL' || echo 'OK'",
+    "fix_command": "systemctl stop nfs-server 2>/dev/null; systemctl disable nfs-server 2>/dev/null; echo 'OK'",
+    "description": "NFS kullanılmıyorsa kapatılmalı, açık kalırsa dosya paylaşımına kapı açar."
+  },
+
+  {
+    "id": "sysctl_ip_forward",
+    "name": "IP Forwarding Kapalı Olmalı (CIS 3.1.1)",
+    "category": "Kernel Parametreleri",
+    "severity": "high",
+    "check_command": "[ \"$(sysctl -n net.ipv4.ip_forward 2>/dev/null)\" = '0' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -q 'net.ipv4.ip_forward' /etc/sysctl.conf && sed -i 's/.*net.ipv4.ip_forward.*/net.ipv4.ip_forward = 0/' /etc/sysctl.conf || echo 'net.ipv4.ip_forward = 0' >> /etc/sysctl.conf; sysctl -w net.ipv4.ip_forward=0; echo 'OK'",
+    "description": "Router değilsen IP forwarding kapatılmalı."
+  },
+  {
+    "id": "sysctl_icmp_redirects",
+    "name": "ICMP Redirect Kabul Edilmemeli (CIS 3.2.2)",
+    "category": "Kernel Parametreleri",
+    "severity": "high",
+    "check_command": "V1=$(sysctl -n net.ipv4.conf.all.accept_redirects 2>/dev/null); V2=$(sysctl -n net.ipv4.conf.default.accept_redirects 2>/dev/null); [ \"$V1\" = '0' ] && [ \"$V2\" = '0' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "sysctl -w net.ipv4.conf.all.accept_redirects=0; sysctl -w net.ipv4.conf.default.accept_redirects=0; grep -q 'net.ipv4.conf.all.accept_redirects' /etc/sysctl.conf && sed -i 's/.*net.ipv4.conf.all.accept_redirects.*/net.ipv4.conf.all.accept_redirects = 0/' /etc/sysctl.conf || echo 'net.ipv4.conf.all.accept_redirects = 0' >> /etc/sysctl.conf; grep -q 'net.ipv4.conf.default.accept_redirects' /etc/sysctl.conf && sed -i 's/.*net.ipv4.conf.default.accept_redirects.*/net.ipv4.conf.default.accept_redirects = 0/' /etc/sysctl.conf || echo 'net.ipv4.conf.default.accept_redirects = 0' >> /etc/sysctl.conf; echo 'OK'",
+    "description": "ICMP redirect ile routing tablonuz değişebilir, kabul etmeyin."
+  },
+  {
+    "id": "sysctl_source_routing",
+    "name": "Source Routing Devre Dışı Olmalı (CIS 3.2.1)",
+    "category": "Kernel Parametreleri",
+    "severity": "high",
+    "check_command": "V1=$(sysctl -n net.ipv4.conf.all.accept_source_route 2>/dev/null); V2=$(sysctl -n net.ipv4.conf.default.accept_source_route 2>/dev/null); [ \"$V1\" = '0' ] && [ \"$V2\" = '0' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "sysctl -w net.ipv4.conf.all.accept_source_route=0; sysctl -w net.ipv4.conf.default.accept_source_route=0; grep -q 'net.ipv4.conf.all.accept_source_route' /etc/sysctl.conf && sed -i 's/.*net.ipv4.conf.all.accept_source_route.*/net.ipv4.conf.all.accept_source_route = 0/' /etc/sysctl.conf || echo 'net.ipv4.conf.all.accept_source_route = 0' >> /etc/sysctl.conf; grep -q 'net.ipv4.conf.default.accept_source_route' /etc/sysctl.conf && sed -i 's/.*net.ipv4.conf.default.accept_source_route.*/net.ipv4.conf.default.accept_source_route = 0/' /etc/sysctl.conf || echo 'net.ipv4.conf.default.accept_source_route = 0' >> /etc/sysctl.conf; echo 'OK'",
+    "description": "Source routing açıksa saldırgan paketlerin rotasını belirleyebilir."
+  },
+  {
+    "id": "sysctl_syn_cookies",
+    "name": "TCP SYN Cookies Aktif Olmalı (CIS 3.2.8)",
+    "category": "Kernel Parametreleri",
+    "severity": "medium",
+    "check_command": "[ \"$(sysctl -n net.ipv4.tcp_syncookies 2>/dev/null)\" = '1' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "sysctl -w net.ipv4.tcp_syncookies=1; grep -q 'net.ipv4.tcp_syncookies' /etc/sysctl.conf && sed -i 's/.*net.ipv4.tcp_syncookies.*/net.ipv4.tcp_syncookies = 1/' /etc/sysctl.conf || echo 'net.ipv4.tcp_syncookies = 1' >> /etc/sysctl.conf; echo 'OK'",
+    "description": "SYN flood'e karşı koruma, aktif olmalı."
+  },
+  {
+    "id": "sysctl_rp_filter",
+    "name": "Reverse Path Filtering Aktif Olmalı (CIS 3.2.7)",
+    "category": "Kernel Parametreleri",
+    "severity": "medium",
+    "check_command": "V1=$(sysctl -n net.ipv4.conf.all.rp_filter 2>/dev/null); V2=$(sysctl -n net.ipv4.conf.default.rp_filter 2>/dev/null); [ \"$V1\" = '1' ] && [ \"$V2\" = '1' ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "sysctl -w net.ipv4.conf.all.rp_filter=1; sysctl -w net.ipv4.conf.default.rp_filter=1; grep -q 'net.ipv4.conf.all.rp_filter' /etc/sysctl.conf && sed -i 's/.*net.ipv4.conf.all.rp_filter.*/net.ipv4.conf.all.rp_filter = 1/' /etc/sysctl.conf || echo 'net.ipv4.conf.all.rp_filter = 1' >> /etc/sysctl.conf; grep -q 'net.ipv4.conf.default.rp_filter' /etc/sysctl.conf && sed -i 's/.*net.ipv4.conf.default.rp_filter.*/net.ipv4.conf.default.rp_filter = 1/' /etc/sysctl.conf || echo 'net.ipv4.conf.default.rp_filter = 1' >> /etc/sysctl.conf; echo 'OK'",
+    "description": "Spoofing engeli, paketlerin geldiği arayüzü doğrular."
+  },
+
+  {
+    "id": "password_complexity",
+    "name": "Şifre Karmaşıklığı Zorunlu Olmalı (CIS 5.4.1)",
+    "category": "Şifre Politikası",
+    "severity": "medium",
+    "check_command": "DCREDIT=$(grep -E '^dcredit' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{gsub(/ /,\"\",$2); print $2}'); UCREDIT=$(grep -E '^ucredit' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{gsub(/ /,\"\",$2); print $2}'); LCREDIT=$(grep -E '^lcredit' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{gsub(/ /,\"\",$2); print $2}'); OCREDIT=$(grep -E '^ocredit' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{gsub(/ /,\"\",$2); print $2}'); [ -n \"$DCREDIT\" ] && [ -n \"$UCREDIT\" ] && [ -n \"$LCREDIT\" ] && [ -n \"$OCREDIT\" ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^dcredit' /etc/security/pwquality.conf 2>/dev/null && sed -i 's/^dcredit.*/dcredit = -1/' /etc/security/pwquality.conf || echo 'dcredit = -1' >> /etc/security/pwquality.conf; grep -qE '^ucredit' /etc/security/pwquality.conf 2>/dev/null && sed -i 's/^ucredit.*/ucredit = -1/' /etc/security/pwquality.conf || echo 'ucredit = -1' >> /etc/security/pwquality.conf; grep -qE '^lcredit' /etc/security/pwquality.conf 2>/dev/null && sed -i 's/^lcredit.*/lcredit = -1/' /etc/security/pwquality.conf || echo 'lcredit = -1' >> /etc/security/pwquality.conf; grep -qE '^ocredit' /etc/security/pwquality.conf 2>/dev/null && sed -i 's/^ocredit.*/ocredit = -1/' /etc/security/pwquality.conf || echo 'ocredit = -1' >> /etc/security/pwquality.conf; echo 'OK'",
+    "description": "Şifre karmaşıklığı zorunlu olmalı, basit şifrelere izin verilmemeli."
+  },
+  {
+    "id": "password_min_days",
+    "name": "Şifre Minimum Değiştirme Süresi 7 Gün Olmalı (CIS 5.4.1.2)",
+    "category": "Şifre Politikası",
+    "severity": "low",
+    "check_command": "VAL=$(grep -E '^PASS_MIN_DAYS' /etc/login.defs | awk '{print $2}'); [ -n \"$VAL\" ] && [ \"$VAL\" -ge 7 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^PASS_MIN_DAYS' /etc/login.defs && sed -i 's/^PASS_MIN_DAYS.*/PASS_MIN_DAYS   7/' /etc/login.defs || echo 'PASS_MIN_DAYS   7' >> /etc/login.defs; echo 'OK'",
+    "description": "7 gün bekleme süresiyle şifre döngüsü engeli."
+  },
+  {
+    "id": "password_warn_days",
+    "name": "Şifre Uyarı Süresi 7 Gün Olmalı (CIS 5.4.1.3)",
+    "category": "Şifre Politikası",
+    "severity": "low",
+    "check_command": "VAL=$(grep -E '^PASS_WARN_AGE' /etc/login.defs | awk '{print $2}'); [ -n \"$VAL\" ] && [ \"$VAL\" -ge 7 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^PASS_WARN_AGE' /etc/login.defs && sed -i 's/^PASS_WARN_AGE.*/PASS_WARN_AGE   7/' /etc/login.defs || echo 'PASS_WARN_AGE   7' >> /etc/login.defs; echo 'OK'",
+    "description": "Kullanıcıya süre dolmadan haber vermeli, aniden kilitlenmesin."
+  },
+
+  {
+    "id": "ssh_banner",
+    "name": "SSH Yasal Uyarı Banner'ı Aktif Olmalı (CIS 5.2.15)",
+    "category": "Banner",
+    "severity": "low",
+    "check_command": "grep -qE '^Banner\\s+/etc/issue.net' /etc/ssh/sshd_config && [ -s /etc/issue.net ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^Banner' /etc/ssh/sshd_config && sed -i 's|^Banner.*|Banner /etc/issue.net|' /etc/ssh/sshd_config || echo 'Banner /etc/issue.net' >> /etc/ssh/sshd_config; [ -s /etc/issue.net ] || printf 'WARNING: Unauthorized access to this system is prohibited.\\nAll connections are monitored and recorded.\\nDisconnect IMMEDIATELY if you are not an authorized user.' >> /etc/issue.net; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "SSH banner zorunlu, kurumsal politika gereği."
+  },
+  {
+    "id": "login_banner",
+    "name": "Yerel Giriş Banner'ı (/etc/issue) Aktif Olmalı (CIS 1.7.2)",
+    "category": "Banner",
+    "severity": "low",
+    "check_command": "[ -s /etc/issue ] && grep -qi 'authorized\\|warning\\|unauthorized\\|uyari\\|yetkisiz' /etc/issue && echo 'OK' || echo 'FAIL'",
+    "fix_command": "printf 'WARNING: Authorized users only. All activity may be monitored and reported.\\n' >> /etc/issue; printf 'WARNING: Authorized users only. All activity may be monitored and reported.\\n' >> /etc/motd; echo 'OK'",
+    "description": "Login ekranında uyarı mesajı olmalı."
+  },
+
+  {
+    "id": "auditd_installed",
+    "name": "Auditd Kurulu ve Aktif Olmalı (CIS 4.1.1)",
+    "category": "Denetim (Audit)",
+    "severity": "high",
+    "check_command": "dpkg -l auditd 2>/dev/null | awk '$1==\"ii\" && $2==\"auditd\" {found=1} END {print (found ? \"OK\" : \"FAIL\")}' | grep -q 'OK' && systemctl is-active auditd 2>/dev/null | grep -q '^active$' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "apt-get install -y auditd audispd-plugins 2>/dev/null; systemctl enable auditd; systemctl start auditd; echo 'OK'",
+    "description": "Auditd kurulu ve aktif olmalı, her şey loglanmalı."
+  },
+  {
+    "id": "auditd_shadow_watch",
+    "name": "/etc/shadow Değişiklikleri Denetlenmeli (CIS 4.1.5)",
+    "category": "Denetim (Audit)",
+    "severity": "high",
+    "check_command": "auditctl -l 2>/dev/null | grep -q '/etc/shadow' && echo 'OK' || auditctl -l 2>/dev/null | grep -q 'shadow' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "auditctl -w /etc/shadow -p wa -k shadow_changes 2>/dev/null; grep -q '/etc/shadow' /etc/audit/rules.d/hardening.rules 2>/dev/null || echo '-w /etc/shadow -p wa -k shadow_changes' >> /etc/audit/rules.d/hardening.rules; echo 'OK'",
+    "description": "Shadow değişiklikleri loglanmalı, kim ne zaman dokundu belli olmalı."
+  },
+  {
+    "id": "auditd_sudoers_watch",
+    "name": "/etc/sudoers Değişiklikleri Denetlenmeli (CIS 4.1.14)",
+    "category": "Denetim (Audit)",
+    "severity": "high",
+    "check_command": "auditctl -l 2>/dev/null | grep -q '/etc/sudoers' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "auditctl -w /etc/sudoers -p wa -k sudoers_changes 2>/dev/null; auditctl -w /etc/sudoers.d -p wa -k sudoers_changes 2>/dev/null; grep -q '/etc/sudoers' /etc/audit/rules.d/hardening.rules 2>/dev/null || printf '-w /etc/sudoers -p wa -k sudoers_changes\\n-w /etc/sudoers.d -p wa -k sudoers_changes\\n' >> /etc/audit/rules.d/hardening.rules; echo 'OK'",
+    "description": "Sudoers değişiklikleri denetlenmeli, yetkisiz değişim tespit edilmeli."
+  },
+  {
+    "id": "auditd_passwd_watch",
+    "name": "/etc/passwd Değişiklikleri Denetlenmeli (CIS 4.1.5)",
+    "category": "Denetim (Audit)",
+    "severity": "medium",
+    "check_command": "auditctl -l 2>/dev/null | grep -q '/etc/passwd' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "auditctl -w /etc/passwd -p wa -k passwd_changes 2>/dev/null; grep -q '/etc/passwd' /etc/audit/rules.d/hardening.rules 2>/dev/null || echo '-w /etc/passwd -p wa -k passwd_changes' >> /etc/audit/rules.d/hardening.rules; echo 'OK'",
+    "description": "Passwd değişiklikleri loglanmalı, yeni kullanıcı eklemesi gözetim altında olmalı."
+  },
+
+  {
+    "id": "sudo_log_enabled",
+    "name": "Sudo Loglaması Aktif Olmalı (CIS 5.3.4)",
+    "category": "Kullanıcı Güvenliği",
+    "severity": "medium",
+    "check_command": "grep -qrE '^Defaults.*logfile|^Defaults.*log_output' /etc/sudoers /etc/sudoers.d/ 2>/dev/null && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -q 'Defaults logfile' /etc/sudoers 2>/dev/null || echo 'Defaults logfile=\"/var/log/sudo.log\"' >> /etc/sudoers; echo 'OK'",
+    "description": "Sudo komutları loglanmalı, kim ne yapmış belli olmalı."
+  },
+  {
+    "id": "inactive_accounts_locked",
+    "name": "Pasif Hesaplar 30 Gün Sonra Kilitlenmeli (CIS 5.4.1.4)",
+    "category": "Kullanıcı Güvenliği",
+    "severity": "medium",
+    "check_command": "VAL=$(useradd -D 2>/dev/null | grep INACTIVE | cut -d= -f2); [ -n \"$VAL\" ] && [ \"$VAL\" -ge 0 ] && [ \"$VAL\" -le 30 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "useradd -D -f 30; echo 'OK'",
+    "description": "Pasif hesaplar 30 gün sonra kilitlenmeli, açık kalması risk."
+  },
+  {
+    "id": "ssh_max_auth_tries",
+    "name": "SSH Maksimum Giriş Denemesi 4 Olmalı (CIS 5.2.7)",
+    "category": "SSH",
+    "severity": "medium",
+    "check_command": "VAL=$(grep -E '^MaxAuthTries' /etc/ssh/sshd_config | awk '{print $2}'); [ -n \"$VAL\" ] && [ \"$VAL\" -le 4 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^MaxAuthTries' /etc/ssh/sshd_config && sed -i 's/^MaxAuthTries.*/MaxAuthTries 4/' /etc/ssh/sshd_config || echo 'MaxAuthTries 4' >> /etc/ssh/sshd_config; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "4 denemeden fazlası başarısız olursa bağlantıyı kesmeli."
+  },
+  {
+    "id": "ssh_idle_timeout",
+    "name": "SSH Boşta Kalma Zaman Aşımı Ayarlanmalı (CIS 5.2.13)",
+    "category": "SSH",
+    "severity": "medium",
+    "check_command": "V1=$(grep -E '^ClientAliveInterval' /etc/ssh/sshd_config | awk '{print $2}'); V2=$(grep -E '^ClientAliveCountMax' /etc/ssh/sshd_config | awk '{print $2}'); [ -n \"$V1\" ] && [ \"$V1\" -le 300 ] && [ -n \"$V2\" ] && [ \"$V2\" -le 3 ] && echo 'OK' || echo 'FAIL'",
+    "fix_command": "grep -qE '^ClientAliveInterval' /etc/ssh/sshd_config && sed -i 's/^ClientAliveInterval.*/ClientAliveInterval 300/' /etc/ssh/sshd_config || echo 'ClientAliveInterval 300' >> /etc/ssh/sshd_config; grep -qE '^ClientAliveCountMax' /etc/ssh/sshd_config && sed -i 's/^ClientAliveCountMax.*/ClientAliveCountMax 3/' /etc/ssh/sshd_config || echo 'ClientAliveCountMax 3' >> /etc/ssh/sshd_config; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "Boşta kalan SSH 5 dakikada kesilmeli, unutulan oturum tehlikeli."
+  },
+  {
+    "id": "ssh_protocol_version",
+    "name": "SSH Protokol Versiyonu Kısıtlanmalı (CIS 5.2.1)",
+    "category": "SSH",
+    "severity": "high",
+    "check_command": "grep -qE '^Protocol\\s+1' /etc/ssh/sshd_config && echo 'FAIL' || echo 'OK'",
+    "fix_command": "grep -qE '^Protocol' /etc/ssh/sshd_config && sed -i 's/^Protocol.*/Protocol 2/' /etc/ssh/sshd_config || echo 'Protocol 2' >> /etc/ssh/sshd_config; systemctl restart sshd 2>/dev/null; echo 'OK'",
+    "description": "Protocol 1 eski ve güvenilmez, 2 olmalı."
+  },
+  {
+    "id": "ufw_default_deny",
+    "name": "UFW Varsayılan Gelen Trafik Politikası DENY Olmalı (CIS 3.5.1)",
+    "category": "Ağ",
+    "severity": "high",
+    "check_command": "ufw status verbose 2>/dev/null | grep -q 'Default: deny (incoming)' && echo 'OK' || echo 'FAIL'",
+    "fix_command": "ufw default deny incoming; ufw default allow outgoing; ufw allow 22/tcp; ufw --force enable; echo 'OK'",
+    "description": "UFW varsayılan olarak her şeyi reddetmeli, sadece izinli portlar açık olmalı."
+  }
+]

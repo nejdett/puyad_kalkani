@@ -1,0 +1,7 @@
+{
+  "RUN_MODE": "standalone",
+  "AGENT_SHARED_SECRET": "guclu-bir-secret-key-buraya-yazin",
+  "TELEGRAM_ENABLED": false,
+  "TELEGRAM_BOT_TOKEN": "",
+  "TELEGRAM_CHAT_ID": ""
+}

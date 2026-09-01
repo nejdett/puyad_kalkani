@@ -1,0 +1,154 @@
+.network-map-page {
+  padding: 24px;
+}
+
+.nm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.nm-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.nm-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.nm-tab:hover { color: var(--text-primary); }
+
+.nm-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.nm-badge {
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.nm-content {
+  min-height: 500px;
+}
+
+/* Topoloji */
+.topology-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.topology-svg {
+  width: 100%;
+  height: auto;
+  max-height: 500px;
+}
+
+/* Harita */
+.geoip-section {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.attack-map-wrapper {
+  flex: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.attack-map {
+  width: 100%;
+  height: 500px;
+  background: #0b0d14;
+}
+
+/* OSM tile'lari icin koyu tema filtresi - API key gerektirmez */
+.dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.1);
+}
+
+.map-popup {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.map-popup strong {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+/* Detay Paneli */
+.attack-detail-panel {
+  width: 280px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.adp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.adp-header h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.adp-body {
+  padding: 12px 16px;
+}
+
+.adp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12px;
+}
+
+.adp-row:last-child { border-bottom: none; }
+
+.adp-row span:first-child {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.adp-row code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+}

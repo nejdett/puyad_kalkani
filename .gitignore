@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Sensitive files
+backend/.secret_key
+backend/credentials.json
+config.json
+backend/history.db
+backend/history.db-shm
+backend/history.db-wal
+backend/scheduler_config.json
+backend/scheduler_alerts.json
+backend/honeypot_config.json
+backend/ignored.json
+backend/snapshots/
+
+# Node.js
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# Build outputs
+frontend/build/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*

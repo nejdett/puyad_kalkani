@@ -1,0 +1,186 @@
+[
+  {
+    "package": "openssh-server",
+    "cve_id": "CVE-2024-6387",
+    "severity": "critical",
+    "affected_below": "1:9.7p1",
+    "description": "regreSSHion: race condition in sshd allows unauthenticated remote code execution",
+    "fix": "apt install --only-upgrade openssh-server"
+  },
+  {
+    "package": "openssh-server",
+    "cve_id": "CVE-2023-48795",
+    "severity": "medium",
+    "affected_below": "1:9.6p1",
+    "description": "Terrapin attack: prefix truncation attack on SSH Binary Packet Protocol",
+    "fix": "apt install --only-upgrade openssh-server"
+  },
+  {
+    "package": "openssl",
+    "cve_id": "CVE-2024-5535",
+    "severity": "critical",
+    "affected_below": "3.0.15",
+    "description": "SSL_select_next_proto buffer overread in libssl",
+    "fix": "apt install --only-upgrade openssl libssl3"
+  },
+  {
+    "package": "openssl",
+    "cve_id": "CVE-2024-4741",
+    "severity": "high",
+    "affected_below": "3.0.14",
+    "description": "Use-after-free when comparing DSA keys in libcrypto",
+    "fix": "apt install --only-upgrade openssl libssl3"
+  },
+  {
+    "package": "openssl",
+    "cve_id": "CVE-2024-2511",
+    "severity": "medium",
+    "affected_below": "3.0.14",
+    "description": "Unbounded memory growth in TLSv1.3 session handling",
+    "fix": "apt install --only-upgrade openssl libssl3"
+  },
+  {
+    "package": "sudo",
+    "cve_id": "CVE-2023-22809",
+    "severity": "high",
+    "affected_below": "1.9.12p2",
+    "description": "Sudo before 1.9.12p2 allows local users to edit arbitrary files via sudoedit",
+    "fix": "apt install --only-upgrade sudo"
+  },
+  {
+    "package": "sudo",
+    "cve_id": "CVE-2023-28486",
+    "severity": "medium",
+    "affected_below": "1.9.12p1",
+    "description": "Sudo before 1.9.12p1 does not quote special characters in log messages",
+    "fix": "apt install --only-upgrade sudo"
+  },
+  {
+    "package": "curl",
+    "cve_id": "CVE-2024-39689",
+    "severity": "high",
+    "affected_below": "7.88.1-10",
+    "description": "certifi: removal of e-Tugra root certificate",
+    "fix": "apt install --only-upgrade curl libcurl4"
+  },
+  {
+    "package": "curl",
+    "cve_id": "CVE-2024-2004",
+    "severity": "medium",
+    "affected_below": "7.88.1-10+deb12u5",
+    "description": "Usage of disabled protocol in libcurl",
+    "fix": "apt install --only-upgrade curl libcurl4"
+  },
+  {
+    "package": "git",
+    "cve_id": "CVE-2024-32002",
+    "severity": "critical",
+    "affected_below": "2.39.2",
+    "description": "Recursive clone and symlink can cause arbitrary code execution",
+    "fix": "apt install --only-upgrade git"
+  },
+  {
+    "package": "git",
+    "cve_id": "CVE-2024-32004",
+    "severity": "high",
+    "affected_below": "2.39.2",
+    "description": "Arbitrary code execution via local clone with crafted .gitmodules",
+    "fix": "apt install --only-upgrade git"
+  },
+  {
+    "package": "python3",
+    "cve_id": "CVE-2024-6923",
+    "severity": "high",
+    "affected_below": "3.11.2-6",
+    "description": "email module header injection via Content-Type",
+    "fix": "apt install --only-upgrade python3 python3-lib"
+  },
+  {
+    "package": "python3",
+    "cve_id": "CVE-2023-6597",
+    "severity": "medium",
+    "affected_below": "3.11.2-6",
+    "description": "tempfile.TemporaryDirectory cleanup symlink attack",
+    "fix": "apt install --only-upgrade python3 python3-lib"
+  },
+  {
+    "package": "nginx",
+    "cve_id": "CVE-2024-7347",
+    "severity": "high",
+    "affected_below": "1.22.1-9",
+    "description": "Worker memory leak on malformed HTTP/2 requests",
+    "fix": "apt install --only-upgrade nginx"
+  },
+  {
+    "package": "nginx",
+    "cve_id": "CVE-2024-24989",
+    "severity": "medium",
+    "affected_below": "1.22.1-9",
+    "description": "Null pointer dereference in HTTP/2 module",
+    "fix": "apt install --only-upgrade nginx"
+  },
+  {
+    "package": "systemd",
+    "cve_id": "CVE-2023-7008",
+    "severity": "high",
+    "affected_below": "252.22-1",
+    "description": "systemd-resolved: DNSSEC verification bypass via certificate algorithm downgrade",
+    "fix": "apt install --only-upgrade systemd"
+  },
+  {
+    "package": "systemd",
+    "cve_id": "CVE-2023-26604",
+    "severity": "medium",
+    "affected_below": "252.19-1",
+    "description": "local users can bypass security restrictions via SystemdTemplateUnitFile",
+    "fix": "apt install --only-upgrade systemd"
+  },
+  {
+    "package": "krb5-libs",
+    "cve_id": "CVE-2024-26462",
+    "severity": "high",
+    "affected_below": "1.20.1-2+deb12u1",
+    "description": "Memory leak in krb5_gss_inquire_sec_context (libkrb5)",
+    "fix": "apt install --only-upgrade krb5-libs libk5crypto3"
+  },
+  {
+    "package": "nettle",
+    "cve_id": "CVE-2024-28835",
+    "severity": "medium",
+    "affected_below": "3.8.1-2",
+    "description": "GnuTLS certtool heap-based buffer overflow",
+    "fix": "apt install --only-upgrade nettle libnettle8"
+  },
+  {
+    "package": "libxml2",
+    "cve_id": "CVE-2024-34459",
+    "severity": "high",
+    "affected_below": "2.9.14+dfsg-1",
+    "description": "Buffer over-read in xmlSnprintfElementContent",
+    "fix": "apt install --only-upgrade libxml2"
+  },
+  {
+    "package": "libxml2",
+    "cve_id": "CVE-2024-25062",
+    "severity": "medium",
+    "affected_below": "2.9.14+dfsg-1",
+    "description": "Use-after-free in xmlValidatePopName during XML validation",
+    "fix": "apt install --only-upgrade libxml2"
+  },
+  {
+    "package": "glibc",
+    "cve_id": "CVE-2024-2961",
+    "severity": "critical",
+    "affected_below": "2.36-9+deb12u4",
+    "description": "Iconv buffer overflow in ISO-2022-CN-EXT support",
+    "fix": "apt install --only-upgrade libc6 libc-bin"
+  },
+  {
+    "package": "glibc",
+    "cve_id": "CVE-2023-6246",
+    "severity": "high",
+    "affected_below": "2.36-9+deb12u3",
+    "description": "__gconv_vasprintf heap-based buffer overflow",
+    "fix": "apt install --only-upgrade libc6 libc-bin"
+  }
+]

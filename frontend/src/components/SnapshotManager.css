@@ -1,0 +1,14 @@
+.snapshot-manager { display: flex; flex-direction: column; gap: 1.5rem; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+.create-box .create-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.create-box .create-row .form-input { flex: 1; min-width: 200px; }
+.hint-text { font-size: 0.75rem; color: var(--text-muted); }
+
+.snap-label { font-weight: 500; color: var(--text-primary); font-size: 0.85rem; }
+.snap-id { font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px; }
+.snap-size { color: var(--accent-hover); font-weight: 600; font-size: 0.82rem; }
+.td-date { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+
+.row-actions { display: flex; gap: 0.4rem; align-items: center; }
+.btn-sm { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
